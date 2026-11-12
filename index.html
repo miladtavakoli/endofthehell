@@ -511,6 +511,16 @@
         }
         .modal-box img:not([src]) { display: none; }
         .modal-loading { color: var(--muted); padding: 40px 0; }
+        .modal-status {
+            display: none;
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--khaki-soft);
+            background: rgba(200, 178, 115, .1);
+            border: 1px solid var(--line);
+        }
         .modal-box .actions .ghost { height: 44px; font-size: 14px; }
 
         /* finished */
@@ -709,6 +719,7 @@
         <div class="modal-box">
             <div class="modal-loading" id="imgLoading">در حال ساخت عکس…</div>
             <img id="imgPreview" alt="عکس روزشمار سربازی">
+            <div class="modal-status" id="imgStatus"></div>
             <div class="actions">
                 <button type="button" class="ghost primary" id="imgShare">اشتراک‌گذاری</button>
                 <button type="button" class="ghost" id="imgDownload">دانلود</button>
@@ -722,8 +733,8 @@
     </footer>
 </div>
 
-<script src="tojalali.js"></script>
-<script src="eoth2.js"></script>
-<script src="app.js"></script>
+<script src="tojalali.js?v=3"></script>
+<script src="eoth2.js?v=3"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
