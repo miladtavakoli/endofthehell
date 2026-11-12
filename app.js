@@ -366,44 +366,81 @@
         return c;
     }
 
+    var imgDataUrl = null;
+
+    function dataUrlToBlob(url) {
+        var parts = url.split(','), bin = atob(parts[1]), arr = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        return new Blob([arr], { type: 'image/png' });
+    }
+
+    function imgStatus(msg) {
+        var el = $('imgStatus');
+        el.textContent = msg || '';
+        el.style.display = msg ? 'block' : 'none';
+    }
+
     function openImage() {
         if (!state) return;
         var modal = $('imgModal'), img = $('imgPreview');
+        imgBlob = null; imgDataUrl = null;
         img.removeAttribute('src');
+        imgStatus('');
         $('imgLoading').style.display = 'block';
         modal.classList.add('open');
-        var ready = document.fonts && document.fonts.load
-            ? document.fonts.load('40px Vazir').catch(function () {})
-            : Promise.resolve();
+        var ready = Promise.resolve();
+        try {
+            if (document.fonts && document.fonts.load) {
+                ready = Promise.race([
+                    document.fonts.load('40px Vazir'),
+                    new Promise(function (r) { setTimeout(r, 1500); })
+                ]).catch(function () {});
+            }
+        } catch (e) {}
         ready.then(function () {
-            var c = drawShareImage();
-            c.toBlob(function (blob) {
-                imgBlob = blob;
-                img.src = URL.createObjectURL(blob);
-                $('imgLoading').style.display = 'none';
-            }, 'image/png');
+            try {
+                // data URL works everywhere (also for long-press "save image" in in-app browsers)
+                imgDataUrl = drawShareImage().toDataURL('image/png');
+                imgBlob = dataUrlToBlob(imgDataUrl);
+                img.src = imgDataUrl;
+            } catch (e) {
+                imgStatus('ساخت عکس روی این مرورگر ممکن نشد 😕');
+            }
+            $('imgLoading').style.display = 'none';
         });
     }
 
     function downloadImage() {
-        if (!imgBlob) return;
+        if (!imgDataUrl) return;
         var a = document.createElement('a');
-        a.href = URL.createObjectURL(imgBlob);
+        a.href = imgDataUrl;
         a.download = 'sarbazi.png';
+        if (!('download' in a)) {
+            imgStatus('روی عکس انگشتت رو نگه دار و «ذخیره عکس» رو بزن');
+            return;
+        }
         document.body.appendChild(a);
         a.click();
         a.remove();
+        imgStatus('اگه دانلود نشد، روی عکس انگشتت رو نگه دار و «ذخیره عکس» رو بزن');
     }
 
     function shareImage() {
         if (!imgBlob) return;
-        var file = new File([imgBlob], 'sarbazi.png', { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({ files: [file], text: 'روزشمار سربازی: https://endofthehell.ir' })
-                .catch(function () {});
-        } else {
+        var file;
+        try { file = new File([imgBlob], 'sarbazi.png', { type: 'image/png' }); } catch (e) { file = null; }
+        var data = file ? { files: [file] } : null;
+        var can = false;
+        try { can = !!(data && navigator.share && navigator.canShare && navigator.canShare(data)); } catch (e) {}
+        if (!can) {
             downloadImage();
+            imgStatus('مرورگرت اشتراک مستقیم عکس رو پشتیبانی نمی‌کنه؛ عکس رو ذخیره کن و توی استوری بذار. (توی تلگرام/اینستاگرام، سایت رو با Chrome یا Safari باز کن)');
+            return;
         }
+        navigator.share(data).catch(function (err) {
+            if (err && err.name === 'AbortError') return; // user closed the share sheet
+            downloadImage();
+        });
     }
 
     // ---------- confetti ----------
