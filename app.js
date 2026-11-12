@@ -215,8 +215,194 @@
             navigator.clipboard.writeText(text).then(function () {
                 var b = $('shareBtn');
                 b.textContent = 'کپی شد ✓';
-                setTimeout(function () { b.textContent = 'اشتراک‌گذاری'; }, 2000);
+                setTimeout(function () { b.textContent = 'اشتراک‌گذاری متن'; }, 2000);
             });
+        }
+    }
+
+    // ---------- share image ----------
+    var imgBlob = null;
+
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+    }
+
+    function drawShareImage() {
+        var W = 1080, H = 1920, F = 'Vazir, Tahoma, sans-serif';
+        var c = document.createElement('canvas');
+        c.width = W; c.height = H;
+        var ctx = c.getContext('2d');
+        ctx.direction = 'rtl';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        var now = new Date();
+        var total = state.exit - state.start;
+        var pct = Math.min(Math.max((now - state.start) / total * 100, 0), 100);
+        var leftDays = Math.max(Math.ceil((state.exit - now) / DAY), 0);
+        var doneDays = Math.max(Math.floor((now - state.start) / DAY), 0);
+        var finished = pct >= 100;
+
+        // background
+        var bg = ctx.createLinearGradient(0, 0, 0, H);
+        bg.addColorStop(0, '#232a1a');
+        bg.addColorStop(1, '#0f120c');
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+
+        // camo blobs
+        var blobs = [[150, 260, 260, 150, '#6b7a3c'], [880, 180, 200, 300, '#4a5229'],
+            [620, 980, 340, 170, '#8a7a4a'], [200, 1350, 220, 260, '#4a5229'],
+            [920, 1620, 300, 160, '#6b7a3c'], [480, 520, 180, 110, '#8a7a4a'],
+            [90, 1800, 260, 140, '#8a7a4a']];
+        ctx.globalAlpha = .1;
+        blobs.forEach(function (b, i) {
+            ctx.fillStyle = b[4];
+            ctx.beginPath();
+            ctx.ellipse(b[0], b[1], b[2], b[3], i * .6, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+
+        // hazard stripes top & bottom
+        function stripes(y) {
+            ctx.save();
+            ctx.beginPath(); ctx.rect(0, y, W, 22); ctx.clip();
+            ctx.fillStyle = '#2b3120'; ctx.fillRect(0, y, W, 22);
+            ctx.fillStyle = '#c8b273';
+            for (var x = -40; x < W + 40; x += 44) {
+                ctx.beginPath();
+                ctx.moveTo(x, y + 22); ctx.lineTo(x + 22, y + 22);
+                ctx.lineTo(x + 44, y); ctx.lineTo(x + 22, y);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+        stripes(0); stripes(H - 22);
+
+        // header
+        ctx.fillStyle = '#a9a58f';
+        ctx.font = '36px ' + F;
+        ctx.fillText('🪖  گزارش وضعیت سرباز', W / 2, 150);
+        ctx.font = '96px ' + F;
+        ctx.fillStyle = '#e6d7a3';
+        ctx.fillText('روزشمار سربازی', W / 2, 260);
+
+        // ring
+        var cx = W / 2, cy = 680, r = 290;
+        ctx.lineWidth = 46;
+        ctx.strokeStyle = 'rgba(255,255,255,.08)';
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+        var g = ctx.createLinearGradient(cx - r, cy - r, cx + r, cy + r);
+        g.addColorStop(0, '#9bb04f'); g.addColorStop(1, '#e6d7a3');
+        ctx.strokeStyle = g;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(pct, .5) / 100);
+        ctx.stroke();
+
+        ctx.fillStyle = '#e6d7a3';
+        ctx.font = '170px ' + F;
+        ctx.fillText(fa(pct, finished ? 0 : 1) + '٪', cx, cy - 10);
+        ctx.fillStyle = '#a9a58f';
+        ctx.font = '40px ' + F;
+        ctx.fillText('از خدمت گذشته', cx, cy + 120);
+
+        // mood
+        var md = mood(pct);
+        ctx.fillStyle = '#eee8d5';
+        ctx.font = '62px ' + F;
+        ctx.fillText(md[0], W / 2, 1090);
+        ctx.fillStyle = '#a9a58f';
+        ctx.font = '38px ' + F;
+        ctx.fillText(md[1], W / 2, 1170);
+
+        // stat boxes
+        function box(x, val, label, color) {
+            ctx.fillStyle = 'rgba(0,0,0,.35)';
+            roundRect(ctx, x, 1250, 440, 220, 36); ctx.fill();
+            ctx.strokeStyle = 'rgba(200,178,115,.25)'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = color;
+            ctx.font = '96px ' + F;
+            ctx.fillText(val, x + 220, 1340);
+            ctx.fillStyle = '#a9a58f';
+            ctx.font = '36px ' + F;
+            ctx.fillText(label, x + 220, 1425);
+        }
+        box(560, fa(doneDays), 'روز خدمت کردم', '#9bb04f');
+        box(80, fa(leftDays), finished ? 'روز مونده! 🎉' : 'روز مونده', '#e6d7a3');
+
+        // dog tag
+        var tx = 140, ty = 1530, tw = 800, th = 150;
+        var tg = ctx.createLinearGradient(tx, ty, tx + tw, ty + th);
+        tg.addColorStop(0, '#d8d4c8'); tg.addColorStop(1, '#9c998e');
+        ctx.fillStyle = tg;
+        roundRect(ctx, tx, ty, tw, th, 75); ctx.fill();
+        ctx.fillStyle = '#0f120c';
+        ctx.beginPath(); ctx.arc(tx + 60, ty + th / 2, 18, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#23261d';
+        ctx.textAlign = 'right';
+        ctx.font = '34px ' + F;
+        ctx.fillText('روز ترخیص', tx + tw - 50, ty + th / 2);
+        ctx.textAlign = 'left';
+        ctx.font = '58px ' + F;
+        ctx.fillText(jalaliLabel(state.ey, state.em, state.ed), tx + 110, ty + th / 2 + 4);
+
+        // footer
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#c8b273';
+        ctx.font = '40px ' + F;
+        ctx.fillText('endofthehell.ir', W / 2, 1800);
+        ctx.fillStyle = '#6f6c5c';
+        ctx.font = '30px ' + F;
+        ctx.fillText('روزت رو حساب کن 👆', W / 2, 1855);
+
+        return c;
+    }
+
+    function openImage() {
+        if (!state) return;
+        var modal = $('imgModal'), img = $('imgPreview');
+        img.removeAttribute('src');
+        $('imgLoading').style.display = 'block';
+        modal.classList.add('open');
+        var ready = document.fonts && document.fonts.load
+            ? document.fonts.load('40px Vazir').catch(function () {})
+            : Promise.resolve();
+        ready.then(function () {
+            var c = drawShareImage();
+            c.toBlob(function (blob) {
+                imgBlob = blob;
+                img.src = URL.createObjectURL(blob);
+                $('imgLoading').style.display = 'none';
+            }, 'image/png');
+        });
+    }
+
+    function downloadImage() {
+        if (!imgBlob) return;
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(imgBlob);
+        a.download = 'sarbazi.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }
+
+    function shareImage() {
+        if (!imgBlob) return;
+        var file = new File([imgBlob], 'sarbazi.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({ files: [file], text: 'روزشمار سربازی: https://endofthehell.ir' })
+                .catch(function () {});
+        } else {
+            downloadImage();
         }
     }
 
@@ -254,6 +440,13 @@
     fillSelects();
     $('form').addEventListener('submit', function () { calculate(true); });
     $('shareBtn').addEventListener('click', share);
+    $('imageBtn').addEventListener('click', openImage);
+    $('imgShare').addEventListener('click', shareImage);
+    $('imgDownload').addEventListener('click', downloadImage);
+    $('imgClose').addEventListener('click', function () { $('imgModal').classList.remove('open'); });
+    $('imgModal').addEventListener('click', function (e) {
+        if (e.target === this) this.classList.remove('open');
+    });
     $('editBtn').addEventListener('click', function () {
         $('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
