@@ -86,7 +86,7 @@
         body::before {
             content: "";
             position: fixed;
-            inset: 0;
+            top: 0; right: 0; bottom: 0; left: 0;
             pointer-events: none;
             opacity: .07;
             background:
@@ -255,8 +255,8 @@
             box-shadow: 0 4px 14px rgba(107, 122, 60, .45);
         }
 
-        .tag-red { border-inline-start: 3px solid var(--red); padding-inline-start: 12px; }
-        .tag-green { border-inline-start: 3px solid var(--green); padding-inline-start: 12px; }
+        .tag-red { border-right: 3px solid var(--red); padding-right: 12px; }
+        .tag-green { border-right: 3px solid var(--green); padding-right: 12px; }
 
         .btn {
             display: flex;
@@ -317,7 +317,7 @@
 
         .ring-center {
             position: absolute;
-            inset: 0;
+            top: 0; right: 0; bottom: 0; left: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -396,7 +396,7 @@
 
         .timeline-fill {
             position: absolute;
-            inset-block: 0;
+            top: 0; bottom: 0;
             right: 0;
             width: 0;
             border-radius: 7px;
@@ -489,7 +489,7 @@
 
         .modal {
             position: fixed;
-            inset: 0;
+            top: 0; right: 0; bottom: 0; left: 0;
             z-index: 20;
             display: none;
             align-items: center;
@@ -538,7 +538,22 @@
 
         footer a { color: var(--khaki); text-decoration: none; }
 
-        #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+        #errToast {
+            display: none;
+            position: fixed;
+            left: 12px; right: 12px; bottom: 12px;
+            z-index: 30;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #3a1d17;
+            border: 1px solid rgba(201, 96, 74, .6);
+            color: #f2c2b6;
+            font-size: 13px;
+            direction: ltr;
+            text-align: left;
+            word-break: break-word;
+        }
+        #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 
         @media (max-width: 760px) {
             .hero { grid-template-columns: 1fr; justify-items: center; text-align: center; }
@@ -733,8 +748,18 @@
     </footer>
 </div>
 
-<script src="tojalali.js?v=3"></script>
-<script src="eoth2.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<div id="errToast"></div>
+<script>
+    // show any script error on screen so problems on real phones are visible
+    window.onerror = function (msg, src, line) {
+        var t = document.getElementById('errToast');
+        if (!t) return;
+        t.style.display = 'block';
+        t.textContent = 'خطا: ' + msg + ' (' + String(src || '').split('/').pop() + ':' + line + ')';
+    };
+</script>
+<script src="tojalali.js?v=4"></script>
+<script src="eoth2.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
